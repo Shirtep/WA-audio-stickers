@@ -616,11 +616,6 @@
         status.className = "status" + (isErr ? " err" : "");
         if (frac != null) barIn.style.width = Math.round(frac * 100) + "%";
       };
-      onLang(() => {
-        updateResInfo();
-        api.refresh();
-        if (statusKey) status.textContent = T(statusKey);
-      });
       const revoke = () => { c.urls.forEach((u) => URL.revokeObjectURL(u)); c.urls = []; };
       const clear = () => { c.result = null; c.key = null; result.style.display = "none"; revoke(); setStatus("", 0); };
 
@@ -726,6 +721,11 @@
         },
         isActive: () => true,
       };
+      onLang(() => {
+        updateResInfo();
+        api.refresh();
+        if (statusKey) status.textContent = T(statusKey);
+      });
       return api;
     }
 
