@@ -953,7 +953,7 @@
     // ============================================================ pestaña 2: imagen + audio
     function imageForm() {
       const picker = makePicker("pick.image", "image/*", "pick.imageHint");
-      const thumb = h("img", { class: "thumb", alt: "", style: "display:none" });
+      const thumb = tr(h("img", { class: "thumb", style: "display:none" }), "alt", "pick.chosenImageAlt");
       const animNote = tr(h("div", { class: "note", style: "display:none" }), "textContent", "pick.animNote");
       const s = { file: null, url: null };
       const changed = () => form.refresh();
@@ -1001,7 +1001,7 @@
       const vTrim = makeTrimmer("video", "trim.hintMixVideo");
       vTrim.setMuted(true);
       const vWrap = h("div", { style: "display:none" }, vTrim.el);
-      const gifImg = h("img", { class: "thumb", alt: "", style: "display:none" });
+      const gifImg = tr(h("img", { class: "thumb", style: "display:none" }), "alt", "pick.chosenGifAlt");
       const s = { file: null, kind: null, gif: null, url: null };
       const changed = () => { updateSummary(); form.refresh(); };
       const audio = makeAudioSource(changed);

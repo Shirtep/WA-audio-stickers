@@ -138,7 +138,7 @@
     return new Promise((resolve, reject) => {
       if (typeof v.requestVideoFrameCallback !== "function") return reject(new Error(T("conv.noRvfc")));
       const n = Math.max(1, Math.round(dur * fps));
-      const T = Array.from({ length: n }, (_, k) => t0 + (k + 0.5) / fps);
+      const times = Array.from({ length: n }, (_, k) => t0 + (k + 0.5) / fps);
       const tEnd = t0 + dur;
       const slots = new Array(n);
       const snap = makeSnapper(side, mode, crop);
@@ -169,7 +169,7 @@
         presented++;
         const mt = meta.mediaTime;
         // Los puntos de muestreo anteriores a este cuadro pertenecen al cuadro previo.
-        while (next < n && T[next] < mt - 1e-4) {
+        while (next < n && times[next] < mt - 1e-4) {
           if (last) { slots[next++] = last; last.used = true; } else { pendingFirst++; next++; }
         }
         if (last && !last.used) last.bmpPromise.then((b) => b.close());

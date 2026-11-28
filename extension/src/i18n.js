@@ -78,9 +78,6 @@
       "pick.chosenImageAlt": "imagen elegida",
       "pick.chosenGifAlt": "GIF elegido",
       "mix.decimalSep": ",",
-      "pick.chosenImageAlt": "imagen elegida",
-      "pick.chosenGifAlt": "GIF elegido",
-      "mix.decimalSep": ",",
 
       // Mezcla (Video/GIF + audio)
       "mix.fitLabel": "Si duran distinto",
@@ -298,9 +295,6 @@
       "pick.chosenImageAlt": "chosen image",
       "pick.chosenGifAlt": "chosen GIF",
       "mix.decimalSep": ".",
-      "pick.chosenImageAlt": "chosen image",
-      "pick.chosenGifAlt": "chosen GIF",
-      "mix.decimalSep": ".",
 
       // Mix (Video/GIF + audio)
       "mix.fitLabel": "If durations differ",
@@ -480,6 +474,20 @@
       try { fn(lang); } catch (e) { /* ignore */ }
     }
   };
+
+  // En WhatsApp Web (sin chrome.storage) el puente avisa si el idioma cambió en otra página
+  // de la extensión (por ejemplo, la del registro), y responde al arrancar con el idioma guardado.
+  const pageWorld = typeof chrome === "undefined" || !chrome.storage;
+  if (pageWorld) {
+    window.addEventListener("message", (ev) => {
+      if (ev.source !== window || !ev.data || ev.data.__waas !== "langChanged") return;
+      const lang = ev.data.lang;
+      if (!SUPPORTED.includes(lang)) return;
+      try { localStorage.setItem(LANG_KEY, JSON.stringify(lang)); } catch (e) { /* ignore */ }
+      WAAS.setLang(lang, { persist: false });
+    });
+    try { window.postMessage({ __waas: "getLang" }, location.origin); } catch (e) { /* ignore */ }
+  }
 
   WAAS.t = (key, vars) => {
     const dict = STRINGS[WAAS.lang] || STRINGS.es;
