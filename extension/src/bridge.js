@@ -3,6 +3,7 @@
 // - pasa a la página la orden de abrir el panel (botón de la extensión) y avisa al fondo.
 (() => {
   const MAX_ENTRIES = 5000;
+  const LANGS = ["es", "en", "pt"]; // mismos idiomas que SUPPORTED en i18n.js
   let queue = [];
   let timer = null;
   let writing = Promise.resolve();
@@ -42,6 +43,19 @@
       chrome.runtime.sendMessage({ waas: "openLog" }).catch(() => {});
     } else if (d.__waas === "uiReady") {
       chrome.runtime.sendMessage({ waas: "pageReady" }).catch(() => {});
+    } else if (d.__waas === "setLang" && LANGS.includes(d.lang)) {
+      chrome.storage.local.set({ lang: d.lang });
+    } else if (d.__waas === "getLang") {
+      // El panel pregunta al arrancar: el idioma elegido en la página de registro manda.
+      chrome.storage.local.get({ lang: null }, (res) => {
+        if (LANGS.includes(res.lang)) window.postMessage({ __waas: "langChanged", lang: res.lang }, location.origin);
+      });
+    }
+  });
+
+  chrome.storage.onChanged.addListener((changes) => {
+    if (changes.lang && LANGS.includes(changes.lang.newValue)) {
+      window.postMessage({ __waas: "langChanged", lang: changes.lang.newValue }, location.origin);
     }
   });
 

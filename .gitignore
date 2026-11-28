@@ -4,6 +4,8 @@
 !/.gitignore
 !/.gitattributes
 !/README.md
+!/README.en.md
+!/README.pt.md
 !/LICENSE.md
 !/.github/
 !/extension/

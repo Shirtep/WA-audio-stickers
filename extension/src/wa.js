@@ -3,6 +3,7 @@
 (() => {
   const WAAS = (window.WAAS = window.WAAS || {});
   const log = (lvl, ev, data) => WAAS.log(lvl, ev, data);
+  const T = (k, vars) => (WAAS.t ? WAAS.t(k, vars) : k);
   const W = (WAAS.wa = {});
 
   const SOUND_PROPS = ["sound_stickers_consumption_enabled", "sound_stickers_creation_enabled", "sound_stickers_audio_playing_enabled"];
@@ -29,7 +30,7 @@
   }
   async function load(name, timeoutMs = 15000) {
     try { return ns(name); } catch (e) { /* puede ser un módulo diferido */ }
-    if (typeof window.requireLazy !== "function") throw new Error(`Módulo ${name} no disponible y no hay requireLazy`);
+    if (typeof window.requireLazy !== "function") throw new Error(T("wa.modUnavailable", { name }));
     await new Promise((resolve, reject) => {
       const t = setTimeout(() => reject(new Error(`Tiempo agotado cargando el módulo ${name}`)), timeoutMs);
       window.requireLazy([name], () => { clearTimeout(t); resolve(); });
@@ -171,7 +172,7 @@
         if (c) { log("info", "chat-propio:encontrado", { via: g, chat: describeChat(c) }); return c; }
       } catch (e) { /* siguiente */ }
     }
-    if (!firstWid) throw new Error("No se pudo obtener tu propio número");
+    if (!firstWid) throw new Error(T("wa.noSelfWid"));
     const r = await ns("WAWebFindChatAction").findOrCreateLatestChat(firstWid, "forwardSelectedModals");
     const chat = r && (r.chat || r);
     log("info", "chat-propio:creado", { chat: describeChat(chat) });
@@ -234,7 +235,7 @@
       filehash, size: stickerAudio.size, duration: seconds,
       isCompleteStickerAudio: complete,
     });
-    if (complete !== true) throw new Error("WhatsApp no considera válido el audio subido (isCompleteStickerAudio=" + complete + ")");
+    if (complete !== true) throw new Error(T("wa.invalidAudio", { val: complete }));
     return stickerAudio;
   };
 
@@ -260,7 +261,7 @@
       ack: msg ? msg.ack : null,
     };
     log(resumen.ok ? "info" : "error", "envio:resultado", resumen);
-    if (!resumen.ok) throw new Error("WhatsApp no pudo enviar el sticker (" + resumen.resultado + ")");
+    if (!resumen.ok) throw new Error(T("wa.sendFailed", { res: resumen.resultado }));
     return msg;
   };
 
@@ -270,7 +271,7 @@
     while (Date.now() - t0 < timeoutMs) {
       const a = msg.ack;
       if (a >= ACK.SENT) { log("info", "envio:ack", { ack: a, ms: Date.now() - t0 }); return a; }
-      if (a < 0) throw new Error("El mensaje quedó en estado de error (ack " + a + ")");
+      if (a < 0) throw new Error(T("wa.msgError", { ack: a }));
       await new Promise((r) => setTimeout(r, 300));
     }
     log("warn", "envio:ack-tiempo-agotado", { ack: msg.ack });
@@ -304,17 +305,17 @@
     const prog = onProgress || (() => {});
     W.hookWALogger();
     if (!W.forceSoundStickers()) log("warn", "publicar:gating", "No se pudo activar la opción de stickers con sonido; el audio podría descartarse");
-    prog("Buscando chat…");
+    prog(T("wa.findingChat"));
     const chat = destino === "abierto" ? W.getActiveChat() : await W.getSelfChat();
-    if (!chat) throw new Error(destino === "abierto" ? "Abre primero un chat" : "No se encontró tu chat propio");
-    prog("Subiendo audio…");
+    if (!chat) throw new Error(T(destino === "abierto" ? "wa.noOpenChat" : "wa.noSelfChat"));
+    prog(T("wa.uploadingAudio"));
     const stickerAudio = await W.uploadAudio(ogg, info.segundosAudio, chat);
-    prog("Enviando sticker…");
+    prog(T("wa.sendingSticker"));
     const msg = await W.sendSticker(chat, webp, info, stickerAudio);
     if (abrirReenviar) {
-      prog("Esperando confirmación del servidor…");
+      prog(T("wa.waitingAck"));
       await W.waitForAck(msg);
-      prog("Abriendo Reenviar…");
+      prog(T("wa.openingForward"));
       await W.openForward(msg);
     }
     return { chat, msg };

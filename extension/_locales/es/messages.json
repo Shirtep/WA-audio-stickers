@@ -1,0 +1,11 @@
+{
+  "extName": {
+    "message": "Stickers con sonido"
+  },
+  "extDesc": {
+    "message": "Crea stickers con sonido a partir de un video, una imagen o un GIF y envíalos desde WhatsApp Web. Extensión no oficial."
+  },
+  "actionTitle": {
+    "message": "Crear sticker con sonido"
+  }
+}

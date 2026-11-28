@@ -7,6 +7,10 @@
     body { max-width: 1100px; margin: 0 auto; padding: 16px; font: 13px system-ui, "Segoe UI", sans-serif; background: #fff; color: #111b21; }
     @media (prefers-color-scheme: dark) { body { background: #111b21; color: #e9edef; } #log { background: #202c33 !important; } }
     h1 { font-size: 15px; margin: 0 0 6px; }
+    .hdr { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .seg { display: inline-flex; border: 1px solid #8696a0; border-radius: 14px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; padding: 3px 10px; font-size: 12px; }
+    .seg button.on { background: #00a884; color: #fff; }
     .row { display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
     button { padding: 6px 12px; border-radius: 14px; border: 1px solid #8696a0; background: transparent; color: inherit; cursor: pointer; }
     button.main { background: #00a884; color: #fff; border: none; }
@@ -16,8 +20,11 @@
   </style>
 </head>
 <body>
-  <h1>Stickers con sonido: registro</h1>
-  <div style="font-size:12px;margin-bottom:6px">Si algo falla, descarga el registro y compártelo con quien te pasó la extensión. Los números de teléfono aparecen ocultos.</div>
+  <div class="hdr">
+    <h1 id="title">Stickers con sonido: registro</h1>
+    <span class="seg" id="langs"></span>
+  </div>
+  <div id="desc" style="font-size:12px;margin-bottom:6px">Si algo falla, descarga el registro y compártelo con quien te pasó la extensión. Los números de teléfono aparecen ocultos.</div>
   <div id="summary">Cargando…</div>
   <div class="row">
     <button class="main" id="dl">Descargar registro (.json)</button>
@@ -26,6 +33,7 @@
     <button id="clear">Borrar registro</button>
   </div>
   <div id="log"></div>
+  <script src="src/i18n.js"></script>
   <script src="registro.js"></script>
 </body>
 </html>
