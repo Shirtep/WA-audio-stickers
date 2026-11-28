@@ -12,8 +12,7 @@ function applyLang() {
   $("copy").textContent = T("log.copy");
   $("errors").textContent = onlyErrors ? T("log.showAll") : T("log.onlyErrors");
   $("clear").textContent = T("log.clear");
-  $("lang-es").classList.toggle("on", WAAS.lang === "es");
-  $("lang-en").classList.toggle("on", WAAS.lang === "en");
+  for (const b of $("langs").children) b.classList.toggle("on", b.dataset.lang === WAAS.lang);
   render();
 }
 
@@ -37,13 +36,18 @@ function render() {
 function load() {
   chrome.storage.local.get({ log: [], lang: null }, (res) => {
     entries = res.log || [];
-    if (res.lang === "es" || res.lang === "en") WAAS.setLang(res.lang, { persist: false });
+    if (WAAS.LANGS.includes(res.lang)) WAAS.setLang(res.lang, { persist: false });
     applyLang();
   });
 }
 
-$("lang-es").addEventListener("click", () => WAAS.setLang("es"));
-$("lang-en").addEventListener("click", () => WAAS.setLang("en"));
+for (const code of WAAS.LANGS) {
+  const b = document.createElement("button");
+  b.textContent = code.toUpperCase();
+  b.dataset.lang = code;
+  b.addEventListener("click", () => WAAS.setLang(code));
+  $("langs").append(b);
+}
 WAAS.onLangChange(applyLang);
 
 $("dl").addEventListener("click", () => {
@@ -69,7 +73,7 @@ $("clear").addEventListener("click", () => {
 });
 chrome.storage.onChanged.addListener((changes) => {
   if (changes.log) { entries = changes.log.newValue || []; render(); }
-  if (changes.lang && (changes.lang.newValue === "es" || changes.lang.newValue === "en")) {
+  if (changes.lang && WAAS.LANGS.includes(changes.lang.newValue)) {
     WAAS.setLang(changes.lang.newValue, { persist: false });
   }
 });

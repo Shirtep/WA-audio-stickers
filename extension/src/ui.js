@@ -1030,7 +1030,7 @@
         if (fit === "independiente") txt += T("mix.summaryIndep");
         else if (v > a) txt += T("mix.summaryCut", { a: fmtT(a) });
         else if (fit === "repetir") {
-          const nStr = WAAS.lang === "es" ? (a / v).toFixed(1).replace(".", ",") : (a / v).toFixed(1);
+          const nStr = (a / v).toFixed(1).replace(".", T("mix.decimalSep"));
           txt += T("mix.summaryRepeat", { a: fmtT(a), n: nStr });
         } else txt += T("mix.summaryFreeze", { a: fmtT(a), v: fmtT(v) });
         summary.append(txt);
@@ -1128,13 +1128,11 @@
         tr(h("button", { class: "sec", onclick: () => window.postMessage({ __waas: "openLog" }, location.origin) }), "textContent", "tools.openLog")),
       logBox);
 
-    const langEsBtn = h("button", { textContent: "ES", onclick: () => WAAS.setLang && WAAS.setLang("es") });
-    const langEnBtn = h("button", { textContent: "EN", onclick: () => WAAS.setLang && WAAS.setLang("en") });
-    const langSeg = h("span", { class: "seg" }, langEsBtn, langEnBtn);
+    const langBtns = (WAAS.LANGS || ["es"]).map((code) => h("button", { textContent: code.toUpperCase(), onclick: () => WAAS.setLang && WAAS.setLang(code) }));
+    const langSeg = h("span", { class: "seg" }, langBtns);
     onLang(() => {
       langSeg.title = T("app.langTitle");
-      langEsBtn.classList.toggle("on", WAAS.lang === "es");
-      langEnBtn.classList.toggle("on", WAAS.lang === "en");
+      langBtns.forEach((b, i) => b.classList.toggle("on", WAAS.LANGS[i] === WAAS.lang));
     });
     if (WAAS.onLangChange) WAAS.onLangChange(() => langUpdaters.forEach((fn) => fn()));
 
