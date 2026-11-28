@@ -28,7 +28,7 @@
     },
     {
       "matches": ["https://web.whatsapp.com/*"],
-      "js": ["src/logger.js", "src/convert.js", "src/wa.js", "src/ui.js", "src/main.js"],
+      "js": ["src/logger.js", "src/i18n.js", "src/convert.js", "src/wa.js", "src/ui.js", "src/main.js"],
       "run_at": "document_idle",
       "world": "MAIN"
     }

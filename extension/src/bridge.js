@@ -40,8 +40,21 @@
       writing = writing.then(() => new Promise((r) => chrome.storage.local.set({ log: [] }, r)));
     } else if (d.__waas === "openLog") {
       chrome.runtime.sendMessage({ waas: "openLog" }).catch(() => {});
+    } else if (d.__waas === "setLang" && typeof d.lang === "string") {
+      chrome.storage.local.set({ lang: d.lang });
     } else if (d.__waas === "uiReady") {
       chrome.runtime.sendMessage({ waas: "pageReady" }).catch(() => {});
+    } else if (d.__waas === "setLang" && (d.lang === "es" || d.lang === "en")) {
+      chrome.storage.local.set({ lang: d.lang });
+      chrome.storage.local.get({ lang: null }, (res) => {
+        if (res.lang) window.postMessage({ __waas: "langChanged", lang: res.lang }, location.origin);
+      });
+    }
+  });
+
+  chrome.storage.onChanged.addListener((changes) => {
+    if (changes.lang && changes.lang.newValue) {
+      window.postMessage({ __waas: "langChanged", lang: changes.lang.newValue }, location.origin);
     }
   });
 

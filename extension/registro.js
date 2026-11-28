@@ -1,6 +1,21 @@
 const $ = (id) => document.getElementById(id);
+const T = (k, vars) => (window.WAAS && WAAS.t ? WAAS.t(k, vars) : k);
 let onlyErrors = false;
 let entries = [];
+
+function applyLang() {
+  document.documentElement.lang = WAAS.lang;
+  document.title = T("log.title");
+  $("title").textContent = T("log.title");
+  $("desc").textContent = T("log.desc");
+  $("dl").textContent = T("log.download");
+  $("copy").textContent = T("log.copy");
+  $("errors").textContent = onlyErrors ? T("log.showAll") : T("log.onlyErrors");
+  $("clear").textContent = T("log.clear");
+  $("lang-es").classList.toggle("on", WAAS.lang === "es");
+  $("lang-en").classList.toggle("on", WAAS.lang === "en");
+  render();
+}
 
 function render() {
   const box = $("log");
@@ -16,12 +31,20 @@ function render() {
   const errs = entries.filter((e) => e.level === "error").length;
   const warns = entries.filter((e) => e.level === "warn").length;
   const sessions = new Set(entries.map((e) => e.session)).size;
-  $("summary").textContent = `${entries.length} entradas · ${errs} errores · ${warns} avisos · ${sessions} sesiones`;
+  $("summary").textContent = T("log.summary", { total: entries.length, errs, warns, sessions });
 }
 
 function load() {
-  chrome.storage.local.get({ log: [] }, (res) => { entries = res.log || []; render(); });
+  chrome.storage.local.get({ log: [], lang: null }, (res) => {
+    entries = res.log || [];
+    if (res.lang === "es" || res.lang === "en") WAAS.setLang(res.lang, { persist: false });
+    applyLang();
+  });
 }
+
+$("lang-es").addEventListener("click", () => WAAS.setLang("es"));
+$("lang-en").addEventListener("click", () => WAAS.setLang("en"));
+WAAS.onLangChange(applyLang);
 
 $("dl").addEventListener("click", () => {
   const content = JSON.stringify({ exportado: new Date().toISOString(), version: chrome.runtime.getManifest().version, ua: navigator.userAgent, entradas: entries }, null, 1);
@@ -32,17 +55,22 @@ $("dl").addEventListener("click", () => {
 });
 $("copy").addEventListener("click", async () => {
   await navigator.clipboard.writeText(JSON.stringify(entries, null, 1));
-  $("copy").textContent = "Copiado";
-  setTimeout(() => ($("copy").textContent = "Copiar"), 1500);
+  $("copy").textContent = T("log.copied");
+  setTimeout(() => ($("copy").textContent = T("log.copy")), 1500);
 });
 $("errors").addEventListener("click", () => {
   onlyErrors = !onlyErrors;
-  $("errors").textContent = onlyErrors ? "Ver todo" : "Solo errores";
+  $("errors").textContent = onlyErrors ? T("log.showAll") : T("log.onlyErrors");
   render();
 });
 $("clear").addEventListener("click", () => {
-  if (!confirm("¿Borrar todo el registro?")) return;
+  if (!confirm(T("log.clearConfirm"))) return;
   chrome.storage.local.set({ log: [] }, load);
 });
-chrome.storage.onChanged.addListener((changes) => { if (changes.log) { entries = changes.log.newValue || []; render(); } });
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes.log) { entries = changes.log.newValue || []; render(); }
+  if (changes.lang && (changes.lang.newValue === "es" || changes.lang.newValue === "en")) {
+    WAAS.setLang(changes.lang.newValue, { persist: false });
+  }
+});
 load();
