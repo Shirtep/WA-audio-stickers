@@ -49,6 +49,10 @@
   select { padding: 4px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); font: inherit; max-width: 100%; }
   label.chk { display: flex; gap: 8px; align-items: flex-start; margin: 6px 0; }
   video { display: block; width: 100%; max-height: 260px; background: #000; border-radius: 8px; }
+  .vstage { position: relative; background: #000; border-radius: 8px; overflow: hidden; }
+  .crop-layer { position: absolute; pointer-events: none; overflow: hidden; }
+  .crop-box { position: absolute; border: 2px solid var(--accent); box-shadow: 0 0 0 9999px rgba(0,0,0,.55); cursor: move; pointer-events: auto; touch-action: none; }
+  .crop-h { position: absolute; width: 10px; height: 10px; background: var(--accent); border: 1.5px solid #fff; border-radius: 2px; margin: -5px 0 0 -5px; }
   .thumb { width: 150px; height: 150px; object-fit: contain; border-radius: 8px; background: repeating-conic-gradient(#bbb 0 25%, #eee 0 50%) 50% / 18px 18px; }
   .track { position: relative; height: 34px; margin: 12px 8px 6px; background: var(--line); border-radius: 6px; cursor: pointer; touch-action: none; user-select: none; }
   .track.audio { height: 48px; }
@@ -201,13 +205,155 @@
       const startCur = tr(tr(h("button", { class: "sec" }), "textContent", "trim.useCursor"), "title", "trim.useCursorStart");
       const endCur = tr(tr(h("button", { class: "sec" }), "textContent", "trim.useCursor"), "title", "trim.useCursorEnd");
       const lenLbl = h("span", { class: "muted" });
-      const tState = { start: 0, end: 0, playhead: 0, stopAt: null, dur: 0, offset: 0, url: null, peaks: null, peakMax: 1, muted: false };
+      const tState = { start: 0, end: 0, playhead: 0, stopAt: null, dur: 0, offset: 0, url: null, peaks: null, peakMax: 1, muted: false, cropMode: "off", crop: null };
       const listeners = new Set();
       const emit = () => listeners.forEach((fn) => fn());
       const mkStep = (txt, titleKey, fn) => tr(h("button", { class: "sec icon", textContent: txt, onclick: fn }), "title", titleKey);
       const hintEl = hintKey ? tr(h("div", { class: "muted", style: "margin-top:6px" }), "textContent", hintKey) : null;
+
+      // Interactive video cropper (Off / Free / 1:1)
+      let stage = media, cropRow = null, layoutCrop = () => {};
+      if (isVideo) {
+        const cropLayer = h("div", { class: "crop-layer", style: "display:none" });
+        const cropBox = h("div", { class: "crop-box" });
+        const handles = [
+          ["nw", "0%", "0%", "nwse-resize"], ["n", "50%", "0%", "ns-resize"], ["ne", "100%", "0%", "nesw-resize"],
+          ["e", "100%", "50%", "ew-resize"], ["se", "100%", "100%", "nwse-resize"], ["s", "50%", "100%", "ns-resize"],
+          ["sw", "0%", "100%", "nesw-resize"], ["w", "0%", "50%", "ew-resize"],
+        ];
+        for (const [id, lx, ty, cur] of handles) {
+          cropBox.append(h("div", { class: "crop-h", "data-h": id, style: `left:${lx};top:${ty};cursor:${cur}` }));
+        }
+        cropLayer.append(cropBox);
+        stage = h("div", { class: "vstage" }, media, cropLayer);
+
+        const btnOff = tr(h("button"), "textContent", "crop.off");
+        const btnFree = tr(h("button"), "textContent", "crop.free");
+        const btnSq = tr(h("button"), "textContent", "crop.square");
+        const resetBtn = tr(h("button", { class: "sec", style: "display:none" }), "textContent", "crop.reset");
+        const sizeLbl = h("span", { class: "muted" });
+        cropRow = h("div", { class: "row", style: "margin-top:6px" },
+          tr(h("span"), "textContent", "crop.label"),
+          h("span", { class: "seg" }, btnOff, btnFree, btnSq),
+          resetBtn, sizeLbl);
+
+        const videoRect = () => {
+          const cw = media.clientWidth || 0, ch = media.clientHeight || 0;
+          const vw = media.videoWidth || 0, vh = media.videoHeight || 0;
+          if (!cw || !ch || !vw || !vh) return null;
+          const s = Math.min(cw / vw, ch / vh);
+          const rw = vw * s, rh = vh * s;
+          return { x: (cw - rw) / 2, y: (ch - rh) / 2, w: rw, h: rh, vw, vh };
+        };
+
+        const defaultCrop = (mode) => {
+          const vw = media.videoWidth || 1, vh = media.videoHeight || 1;
+          if (mode === "1:1") {
+            const side = Math.min(vw, vh);
+            const w = side / vw, hgt = side / vh;
+            return { x: (1 - w) / 2, y: (1 - hgt) / 2, w, h: hgt };
+          }
+          return { x: 0.1, y: 0.1, w: 0.8, h: 0.8 };
+        };
+
+        layoutCrop = () => {
+          const on = tState.cropMode !== "off" && tState.dur > 0;
+          btnOff.classList.toggle("on", tState.cropMode === "off");
+          btnFree.classList.toggle("on", tState.cropMode === "free");
+          btnSq.classList.toggle("on", tState.cropMode === "1:1");
+          resetBtn.style.display = on ? "" : "none";
+          const vr = on ? videoRect() : null;
+          if (!on || !vr || !tState.crop) {
+            cropLayer.style.display = "none";
+            sizeLbl.textContent = on ? T("crop.hint") : "";
+            return;
+          }
+          cropLayer.style.display = "";
+          cropLayer.style.left = vr.x + "px";
+          cropLayer.style.top = vr.y + "px";
+          cropLayer.style.width = vr.w + "px";
+          cropLayer.style.height = vr.h + "px";
+          const c = tState.crop;
+          cropBox.style.left = (c.x * 100) + "%";
+          cropBox.style.top = (c.y * 100) + "%";
+          cropBox.style.width = (c.w * 100) + "%";
+          cropBox.style.height = (c.h * 100) + "%";
+          sizeLbl.textContent = `${Math.round(c.w * vr.vw)}×${Math.round(c.h * vr.vh)} px`;
+        };
+
+        const setCropMode = (mode) => {
+          if (G.busy) return;
+          tState.cropMode = mode;
+          if (mode === "off") tState.crop = null;
+          else if (mode === "1:1") tState.crop = defaultCrop("1:1");
+          else if (!tState.crop) tState.crop = defaultCrop("free");
+          layoutCrop();
+          emit();
+        };
+        btnOff.addEventListener("click", () => setCropMode("off"));
+        btnFree.addEventListener("click", () => setCropMode("free"));
+        btnSq.addEventListener("click", () => setCropMode("1:1"));
+        resetBtn.addEventListener("click", () => {
+          if (G.busy || tState.cropMode === "off") return;
+          tState.crop = defaultCrop(tState.cropMode);
+          layoutCrop();
+          emit();
+        });
+
+        let cDrag = null;
+        cropBox.addEventListener("pointerdown", (ev) => {
+          if (G.busy || !tState.crop) return;
+          const vr = videoRect();
+          if (!vr) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          const handle = ev.target && ev.target.dataset ? ev.target.dataset.h : null;
+          cDrag = { h: handle || "move", sx: ev.clientX, sy: ev.clientY, start: { ...tState.crop }, vr };
+          cropBox.setPointerCapture(ev.pointerId);
+        });
+        cropBox.addEventListener("pointermove", (ev) => {
+          if (!cDrag) return;
+          const { h: mode, sx, sy, start, vr } = cDrag;
+          const dx = (ev.clientX - sx) / vr.w;
+          const dy = (ev.clientY - sy) / vr.h;
+          const MIN = 0.08;
+          let { x, y, w, h: hh } = start;
+          if (mode === "move") {
+            x = Math.max(0, Math.min(1 - w, x + dx));
+            y = Math.max(0, Math.min(1 - hh, y + dy));
+          } else {
+            let r = x + w, b = y + hh;
+            if (mode.includes("w")) x = Math.max(0, Math.min(r - MIN, x + dx));
+            if (mode.includes("e")) r = Math.min(1, Math.max(x + MIN, r + dx));
+            if (mode.includes("n")) y = Math.max(0, Math.min(b - MIN, y + dy));
+            if (mode.includes("s")) b = Math.min(1, Math.max(y + MIN, b + dy));
+            w = r - x; hh = b - y;
+            if (tState.cropMode === "1:1") {
+              // Enforce 1:1 square in actual video pixels
+              const pxW = w * vr.vw, pxH = hh * vr.vh;
+              let sidePx = (mode === "n" || mode === "s") ? pxH : (mode === "w" || mode === "e") ? pxW : Math.min(pxW, pxH);
+              const minPx = Math.min(vr.vw, vr.vh) * MIN;
+              sidePx = Math.max(minPx, Math.min(sidePx, (mode.includes("w") ? start.x + start.w : 1 - x) * vr.vw, (mode.includes("n") ? start.y + start.h : 1 - y) * vr.vh));
+              const nw = sidePx / vr.vw, nh = sidePx / vr.vh;
+              if (mode.includes("w")) x = (start.x + start.w) - nw;
+              if (mode.includes("n")) y = (start.y + start.h) - nh;
+              w = nw; hh = nh;
+            }
+          }
+          tState.crop = { x, y, w, h: hh };
+          layoutCrop();
+          emit();
+        });
+        const endCDrag = () => { cDrag = null; };
+        cropBox.addEventListener("pointerup", endCDrag);
+        cropBox.addEventListener("pointercancel", endCDrag);
+        media.addEventListener("loadedmetadata", layoutCrop);
+        if (typeof ResizeObserver !== "undefined") new ResizeObserver(layoutCrop).observe(media);
+        onLang(layoutCrop);
+      }
+
       const el = h("div", null,
-        isVideo ? media : null, track, h("div", { class: "times" }, tLeft, tRight),
+        isVideo ? stage : null, cropRow, track, h("div", { class: "times" }, tLeft, tRight),
         h("div", { class: "row" }, playSegBtn, playCurBtn, playEndBtn, curLbl),
         h("div", { class: "trim" },
           tr(h("span"), "textContent", "trim.start"),
@@ -338,10 +484,11 @@
         stop();
         if (tState.url) URL.revokeObjectURL(tState.url);
         tState.url = URL.createObjectURL(file);
-        Object.assign(tState, { dur: duration, offset, start: 0, end: Math.min(duration, DEFAULT_LEN), playhead: 0, peaks, peakMax });
+        Object.assign(tState, { dur: duration, offset, start: 0, end: Math.min(duration, DEFAULT_LEN), playhead: 0, peaks, peakMax, cropMode: "off", crop: null });
         media.addEventListener("loadeddata", () => seekTo(0), { once: true });
         media.src = tState.url;
         changed();
+        layoutCrop();
         requestAnimationFrame(drawWave);
       };
       const clear = () => {
@@ -349,8 +496,9 @@
         if (tState.url) URL.revokeObjectURL(tState.url);
         tState.url = null;
         media.removeAttribute("src");
-        Object.assign(tState, { dur: 0, start: 0, end: 0, playhead: 0, peaks: null });
+        Object.assign(tState, { dur: 0, start: 0, end: 0, playhead: 0, peaks: null, cropMode: "off", crop: null });
         changed();
+        layoutCrop();
         drawWave();
       };
 
@@ -363,6 +511,7 @@
         get start() { return tState.start; },
         get end() { return tState.end; },
         get len() { return tState.end - tState.start; },
+        get crop() { return tState.cropMode === "off" ? null : tState.crop; },
         get key() { return tState.start.toFixed(3) + "-" + tState.end.toFixed(3); },
       };
     }
@@ -463,7 +612,7 @@
         if (!p) return null;
         const v = p.visual;
         const followsAudio = v.kind === "image" || p.fit !== "independiente";
-        return JSON.stringify([v.kind, fileId(v.file), v.start, v.dur, followsAudio ? p.fit : "", followsAudio ? +p.audio.dur.toFixed(3) : "", f.mode]);
+        return JSON.stringify([v.kind, fileId(v.file), v.start, v.dur, v.crop || null, followsAudio ? p.fit : "", followsAudio ? +p.audio.dur.toFixed(3) : "", f.mode]);
       };
       // Clave del resultado: todo lo que cambia el sticker o su audio (el paquete y el autor se aplican al enviar).
       const fullKey = () => {
@@ -763,7 +912,7 @@
       const changed = () => form.refresh();
       const fmt = makeFormat({
         getParams: () => (s.file && trimmer.loaded ? {
-          visual: { kind: "video", file: s.file, start: trimmer.start, dur: trimmer.len },
+          visual: { kind: "video", file: s.file, start: trimmer.start, dur: trimmer.len, crop: trimmer.crop },
           audio: { file: s.file, start: trimmer.start, dur: trimmer.len }, fit: "repetir",
         } : null),
       });
@@ -900,7 +1049,7 @@
         extras: [summary, fitRow, h("div", { class: "row" }, testBtn, tr(h("span", { class: "muted" }), "textContent", "mix.previewHint"))],
         getParams: () => {
           if (!s.file || !audio.ready) return null;
-          const visual = s.kind === "gif" ? { kind: "gif", file: s.file, start: 0, dur: s.gif.duration } : { kind: "video", file: s.file, start: vTrim.start, dur: vTrim.len };
+          const visual = s.kind === "gif" ? { kind: "gif", file: s.file, start: 0, dur: s.gif.duration } : { kind: "video", file: s.file, start: vTrim.start, dur: vTrim.len, crop: vTrim.crop };
           return { visual, audio: audio.params, fit: fitSel.value };
         },
       });

@@ -96,12 +96,16 @@
   const srcW = (s) => s.videoWidth || s.displayWidth || s.width;
   const srcH = (s) => s.videoHeight || s.displayHeight || s.height;
 
-  function drawFrame(ctx, v, mode, side) {
+  function drawFrame(ctx, v, mode, side, crop) {
     const vw = srcW(v), vh = srcH(v);
+    const sx = crop ? Math.max(0, crop.x * vw) : 0;
+    const sy = crop ? Math.max(0, crop.y * vh) : 0;
+    const sw = crop ? Math.max(1, Math.min(vw - sx, crop.w * vw)) : vw;
+    const sh = crop ? Math.max(1, Math.min(vh - sy, crop.h * vh)) : vh;
     ctx.clearRect(0, 0, side, side);
-    const s = mode === "recortar" ? Math.max(side / vw, side / vh) : Math.min(side / vw, side / vh);
-    const w = vw * s, h = vh * s;
-    ctx.drawImage(v, (side - w) / 2, (side - h) / 2, w, h);
+    const s = mode === "recortar" ? Math.max(side / sw, side / sh) : Math.min(side / sw, side / sh);
+    const w = sw * s, h = sh * s;
+    ctx.drawImage(v, sx, sy, sw, sh, (side - w) / 2, (side - h) / 2, w, h);
   }
 
   async function probeVideo(file) {
@@ -114,13 +118,13 @@
     }
   }
 
-  function makeSnapper(side, mode) {
+  function makeSnapper(side, mode, crop) {
     const canvas = new OffscreenCanvas(side, side);
     const ctx = canvas.getContext("2d");
     const fpCanvas = new OffscreenCanvas(32, 32);
     const fpCtx = fpCanvas.getContext("2d", { willReadFrequently: true });
     return (v) => {
-      drawFrame(ctx, v, mode, side);
+      drawFrame(ctx, v, mode, side, crop);
       fpCtx.clearRect(0, 0, 32, 32);
       fpCtx.drawImage(canvas, 0, 0, 32, 32);
       const fp = fpCtx.getImageData(0, 0, 32, 32).data;
@@ -130,14 +134,14 @@
 
   // Captura reproduciendo el video y tomando cada cuadro mostrado (requestVideoFrameCallback).
   // Es mucho más rápida que saltar cuadro por cuadro en videos largos.
-  function captureByPlayback(v, t0, dur, fps, side, mode, onProgress, signal) {
+  function captureByPlayback(v, t0, dur, fps, side, mode, onProgress, signal, crop) {
     return new Promise((resolve, reject) => {
       if (typeof v.requestVideoFrameCallback !== "function") return reject(new Error(T("conv.noRvfc")));
       const n = Math.max(1, Math.round(dur * fps));
       const T = Array.from({ length: n }, (_, k) => t0 + (k + 0.5) / fps);
       const tEnd = t0 + dur;
       const slots = new Array(n);
-      const snap = makeSnapper(side, mode);
+      const snap = makeSnapper(side, mode, crop);
       let next = 0, last = null, pendingFirst = 0, done = false, presented = 0;
       // El elemento se adjunta al documento (casi invisible) para que Chrome componga sus cuadros.
       v.style.cssText = "position:fixed;right:0;bottom:0;width:4px;height:4px;opacity:0.01;pointer-events:none;z-index:-1";
@@ -185,9 +189,9 @@
   }
 
   // Captura saltando cuadro por cuadro (respaldo, más lenta pero no depende de la reproducción).
-  async function captureBySeeking(v, t0, dur, fps, side, mode, onProgress, signal) {
+  async function captureBySeeking(v, t0, dur, fps, side, mode, onProgress, signal, crop) {
     const n = Math.max(1, Math.round(dur * fps));
-    const snap = makeSnapper(side, mode);
+    const snap = makeSnapper(side, mode, crop);
     const maxT = Math.max(0, v.duration - 0.001);
     const slots = [];
     for (let i = 0; i < n; i++) {
@@ -205,7 +209,7 @@
 
   // Por defecto se salta cuadro por cuadro: es más lento pero exacto (cada instante recibe su cuadro).
   // La reproducción queda como respaldo si un salto se atasca.
-  async function captureFrames(file, start, dur, fps, side, mode, onProgress, signal, method = "saltos") {
+  async function captureFrames(file, start, dur, fps, side, mode, onProgress, signal, method = "saltos", crop = null) {
     const t0 = performance.now();
     let v = await loadVideo(file);
     try {
@@ -217,8 +221,8 @@
         metodo = methods[i];
         try {
           res = metodo === "saltos"
-            ? await captureBySeeking(v, offset + start, dur, fps, side, mode, onProgress, signal)
-            : await captureByPlayback(v, offset + start, dur, fps, side, mode, onProgress, signal);
+            ? await captureBySeeking(v, offset + start, dur, fps, side, mode, onProgress, signal, crop)
+            : await captureByPlayback(v, offset + start, dur, fps, side, mode, onProgress, signal, crop);
           break;
         } catch (e) {
           if ((e && e.name === "AbortError") || i === methods.length - 1) throw e;
@@ -828,7 +832,7 @@
     const capProg = (t, f) => prog(t, f * 0.8);
     const captured = visual.kind === "gif"
       ? await captureAnimation(visual.file, capDur, captureFps, captureSide, mode, capProg, signal)
-      : await captureFrames(visual.file, visual.start || 0, capDur, captureFps, captureSide, mode, capProg, signal);
+      : await captureFrames(visual.file, visual.start || 0, capDur, captureFps, captureSide, mode, capProg, signal, "saltos", visual.crop || null);
     const frames = fitTimeline(captured, capDur, dur, captureFps, fit);
     const sides = SIDES.filter((x) => x <= captureSide);
     const fpsList = FPS_LIST.filter((x) => x <= captureFps);

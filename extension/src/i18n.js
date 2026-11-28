@@ -51,6 +51,14 @@
       "trim.hintAudio": "Elige de dónde a dónde suena. Arrastra las asas o escribe los segundos.",
       "trim.hintMixVideo": "Elige el tramo de la animación. El sonido de este video no se usa.",
 
+      // Recorte de video
+      "crop.label": "Recorte",
+      "crop.off": "Sin recorte",
+      "crop.free": "Libre",
+      "crop.square": "1:1",
+      "crop.reset": "Restablecer",
+      "crop.hint": "Arrastra el recuadro o sus esquinas sobre el video.",
+
       // Selectores de archivo
       "pick.video": "Elegir video…",
       "pick.videoHint": "Cualquier video con sonido.",
@@ -262,6 +270,14 @@
       "trim.hintVideo": "Drag the green handles: the video shows the frame at each handle. Click or drag on the bar to move the playhead.",
       "trim.hintAudio": "Choose where the audio starts and ends. Drag the handles or enter seconds.",
       "trim.hintMixVideo": "Choose the animation clip. This video's original sound is not used.",
+
+      // Video crop
+      "crop.label": "Crop",
+      "crop.off": "Off",
+      "crop.free": "Free",
+      "crop.square": "1:1",
+      "crop.reset": "Reset",
+      "crop.hint": "Drag the box or its handles over the video.",
 
       // File pickers
       "pick.video": "Choose video…",
