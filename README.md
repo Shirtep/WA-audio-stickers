@@ -2,6 +2,8 @@
 
 <h1 align="center">Stickers con sonido</h1>
 
+<p align="center">🌐 <b>Español</b> · <a href="README.en.md">English</a> · <a href="README.pt.md">Português</a></p>
+
 <p align="center">Convierte un video, una imagen o un GIF en un <b>sticker con sonido</b> y envíalo desde <b>WhatsApp Web</b>.<br>Todo se procesa en tu navegador: nada se sube a otro servidor que no sea WhatsApp.</p>
 
 <p align="center"><a href="https://github.com/Shirtep/WA-audio-stickers/releases/latest/download/stickers-con-sonido.zip"><img src="docs/img/boton-descargar.png" width="352" alt="Descargar gratis (ZIP para Chrome, Edge o Brave)"></a></p>
@@ -10,7 +12,7 @@
 
 <p align="center"><sub>Gratis y sin fines de lucro. Las donaciones son voluntarias.</sub></p>
 
-> **Aviso:** proyecto personal, **no oficial**, sin relación con WhatsApp ni con Meta. Usa funciones internas de WhatsApp Web que pueden cambiar en cualquier momento, y activa en tu navegador la función de stickers con sonido, que WhatsApp está probando. Úsalo bajo tu propia responsabilidad.
+> **Aviso:** proyecto personal, **no oficial**, sin relación con WhatsApp ni con Meta. Usa funciones internas de WhatsApp Web que pueden cambiar en cualquier momento, y activa en tu navegador la función de stickers con sonido, que WhatsApp está probando. Úsalo bajo tu propia responsabilidad (ver [Descargo de responsabilidad](#descargo-de-responsabilidad)).
 
 ## Instalación
 
@@ -22,15 +24,15 @@ No hay que ejecutar ningún programa: se carga la carpeta de la extensión en el
 3. Abre la página de extensiones: escribe `chrome://extensions` en la barra de direcciones (en Edge, `edge://extensions`).
 4. Activa **Modo de desarrollador** (arriba a la derecha):
 
-   <img src="docs/img/paso1-modo-desarrollador.png" alt="Interruptor Modo de desarrollador activado" width="230">
+   <img src="docs/img/paso1-modo-desarrollador.png" alt="Interruptor Modo de desarrollador activado" width="222">
 
 5. Pulsa **Cargar extensión sin empaquetar** (en algunas versiones se llama *Cargar descomprimida*):
 
-   <img src="docs/img/paso2-cargar-sin-empaquetar.png" alt="Botón Cargar extensión sin empaquetar" width="420">
+   <img src="docs/img/paso2-cargar-sin-empaquetar.png" alt="Botón Cargar extensión sin empaquetar" width="548">
 
 6. Elige la carpeta `stickers-con-sonido` del paso 2 y pulsa **Seleccionar carpeta**. Aparecerá la extensión:
 
-   <img src="docs/img/paso3-extension-instalada.png" alt="Tarjeta de la extensión Stickers con sonido" width="380">
+   <img src="docs/img/paso3-extension-instalada.png" alt="Tarjeta de la extensión Stickers con sonido" width="420">
 
 7. Pulsa el icono del rompecabezas de la barra del navegador y fija **Stickers con sonido** con la chincheta, para tener a mano su icono violeta.
 
@@ -51,6 +53,7 @@ Las capturas son de Brave. En Chrome y Edge se ve igual, con otros colores.
    En la pestaña **Video** hay cuatro pasos:
    1. **Video:** elige un video con sonido.
    2. **Tramo:** arrastra las asas verdes para marcar el inicio y el fin. El video muestra el cuadro exacto, y **−/+** mueven un cuadro.
+      Si solo quieres una parte de la imagen, usa **Recorte**: *Libre* o *1:1* (cuadrado) muestran un recuadro sobre el video que puedes mover y ajustar desde sus esquinas. También está en la pestaña **Video o GIF + audio** cuando eliges un video.
    3. **Formato:** pulsa **Calcular opciones**. Aparece una tabla de resolución × fps con el peso estimado de cada combinación:
       - verde: cabe;
       - amarillo: cabe bajando la calidad;
@@ -58,6 +61,8 @@ Las capturas son de Brave. En Chrome y Edge se ve igual, con otros colores.
       - ★: la recomendada.
    4. **Crear y enviar:** opcionalmente escribe el **paquete** y el **autor** (WhatsApp los muestra bajo el sticker), crea el sticker, revisa la vista previa y envíalo.
 3. Desde el celular puedes marcarlo como favorito para volver a usarlo.
+
+**Idioma:** el panel está en español, inglés y portugués. Se abre en el idioma de tu navegador (en inglés si no es ninguno de los tres), y puedes cambiarlo con **ES | EN | PT** arriba del panel; tu elección se recuerda.
 
 ## Límites
 
@@ -124,6 +129,16 @@ Si el problema es al instalarla, no hace falta el registro: basta con una captur
 
 - [`docs/como-funciona.md`](docs/como-funciona.md): cómo se arma un sticker con sonido (protobuf, formato del audio, límites) y cómo trabaja la extensión.
 - [`dev/`](dev/): páginas para probar la conversión sin WhatsApp y el video de calibración de sincronía.
+
+## Descargo de responsabilidad
+
+Esta extensión es un proyecto personal, gratuito y sin fines de lucro, y se ofrece tal cual, sin garantías.
+
+- Las condiciones de uso de WhatsApp no autorizan herramientas de terceros como esta. WhatsApp puede limitar, suspender o cerrar las cuentas que las usen o que envíen o reenvíen stickers creados con ellas.
+- Esas decisiones las toma solo WhatsApp: no las controlo y no puedo evitarlas ni revertirlas.
+- No me hago responsable de ninguna restricción, suspensión o pérdida de cuentas, ni de otros daños, que resulten de usar esta extensión o de compartir los stickers que crea.
+
+Si te preocupa, no la uses con una cuenta que no puedas permitirte perder.
 
 ## Licencia
 
